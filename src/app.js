@@ -1,18 +1,24 @@
 const express = require("express");
+const { auth, userAuth } = require("./middlewares/auth");
 const app = express();
+require("./config/database");
 
-app.use("/home", (req, res) => {
-  res.send("Hello World");
+//middlewares
+
+app.use("/admin", auth);
+app.get("/admin/getAllData", (req, res) => {
+  res.send("Data fetched successfully");
 });
 
-app.use("/test", (req, res) => {
-  res.send("This is a test route");
+app.delete("/admin/deleteAll", (req, res) => {
+  res.send("data deleted successfully");
 });
 
-app.use("/", (req, res) => {
-  res.send("This is a dashboard route");
-});
+//user route
 
+app.get("/user/getAllData", userAuth, (req, res) => {
+  res.send("user data fetched successfully");
+});
 app.listen(3000, () => {
   console.log("server is running on port 3000");
 });
