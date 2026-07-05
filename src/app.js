@@ -3,16 +3,74 @@ const app = express();
 const connectDB = require("./config/database");
 const User = require("./models/user");
 
-//POST signup route
+// middleware to parse JSON request bodies
+app.use(express.json());
 
+//get user from DB by emailId
+// app.get("/user", async (req, res) => {
+//   const userEmail = req.body.emailId;
+//   try {
+//     const users = await User.find({ emailId: userEmail });
+//     if (users.length === 0) {
+//       res.status(404).send("User not found");
+//     } else {
+//       res.send(users);
+//     }
+//   } catch (err) {
+//     res.status(400).send("Error fetching user: " + err.message);
+//   }
+// });
+
+//get all users from DB /feed
+app.get("/feed", async (req, res) => {
+  try {
+    const users = await User.find({});
+    if (users.length === 0) {
+      res.status(404).send("No users found");
+    } else {
+      res.send(users);
+    }
+  } catch (err) {
+    res.status(400).send("Error fetching users: " + err.message);
+  }
+});
+
+//use of findOne() method to get a single user by emailId
+app.get("/user", async (req, res) => {
+  const userEmail = req.body.emailId;
+  try {
+    const user = await User.findOne({ emailId: userEmail });
+    if (!user) {
+      res.status(404).send("User not found");
+    } else {
+      res.send(user);
+    }
+  } catch (err) {
+    res.status(400).send("Error fetching user: " + err.message);
+  }
+});
+
+//Delete a user by using findByIdAndDelete method from DB
+
+app.delete("/user", async (req, res) => {
+  const userId = req.body.userId;
+  try {
+    const deletedUser = await User.findByIdAndDelete({ _id: userId });
+    if (!deletedUser) {
+      res.status(404).send("User not found");
+    } else {
+      res.send("User deleted successfully!!");
+    }
+  } catch (err) {
+    res.status(400).send("Error deleting user: " + err.message);
+  }
+});
+
+//POST signup route
 app.post("/signup", async (req, res) => {
-  //create a new instance of User model
-  const user = new User({
-    firstName: "Sheetal",
-    lastName: "Katiyar",
-    emailId: "sheetal@gmail.com",
-    password: "sheetal@123",
-  });
+  console.log(req.body);
+  // create a new instance of User model
+  const user = new User(req.body);
 
   // save the user to the database
   // since save() is an async operation and always returns a promise , use async await to handle this
@@ -24,6 +82,21 @@ app.post("/signup", async (req, res) => {
     res.status(400).send("Error adding user: " + err.message);
   }
 });
+
+// PATCH route to update a user by using findByIdAndUpdate method from DB
+app.patch("/user", async (req, res) => {
+  console.log(req.body);
+  const userId = req.body.userId;
+  try {
+    await User.findByIdAndUpdate({ _id: userId }, req.body, {
+      runValidators: true,
+    });
+    res.send("User updated successfully!!");
+  } catch (err) {
+    res.status(400).send("Error updating user data: " + err.message);
+  }
+});
+
 //DB Connection
 connectDB()
   .then(() => {
