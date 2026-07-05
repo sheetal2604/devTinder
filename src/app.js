@@ -84,10 +84,20 @@ app.post("/signup", async (req, res) => {
 });
 
 // PATCH route to update a user by using findByIdAndUpdate method from DB
-app.patch("/user", async (req, res) => {
-  console.log(req.body);
-  const userId = req.body.userId;
+app.patch("/user/:userId", async (req, res) => {
+  const userId = req.params.userId;
+  // I dont want the user to update certain fields
   try {
+    const ALLOWED_UPDATES = ["gender", "about", "skills", "password"];
+    const isUpdateAllowed = Object.keys(req.body).every((k) =>
+      ALLOWED_UPDATES.includes(k),
+    );
+    if (!isUpdateAllowed) {
+      throw new Error("Invalid updates!");
+    }
+    if (req.body.skills?.length > 10) {
+      throw new Error("Skills array cannot have more than 10 skills");
+    }
     await User.findByIdAndUpdate({ _id: userId }, req.body, {
       runValidators: true,
     });

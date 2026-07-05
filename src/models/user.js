@@ -45,9 +45,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "Hey there! I am using DevTinder",
       trim: true,
+      maxLength: 100,
     },
     skills: {
       type: [String],
+      max: 10,
     },
   },
   {
