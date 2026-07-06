@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const validator = require("validator");
 const userSchema = new mongoose.Schema(
   {
     firstName: {
@@ -21,14 +22,17 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
       validate(value) {
-        if (value.indexOf("@") === -1)
-          throw new Error("Email must contain '@' symbol");
+        if (!validator.isEmail(value)) throw new Error("Email is invalid");
       },
     },
     password: {
       type: String,
       required: true,
       trim: true,
+      validate(value) {
+        if (!validator.isStrongPassword(value))
+          throw new Error("Password is not strong enough");
+      },
     },
     age: {
       type: Number,
@@ -50,6 +54,14 @@ const userSchema = new mongoose.Schema(
     skills: {
       type: [String],
       max: 10,
+    },
+    photoURL: {
+      type: String,
+      validate(value) {
+        if (!validator.isURL(value)) {
+          throw new Error("Photo URL is invalid");
+        }
+      },
     },
   },
   {

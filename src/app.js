@@ -88,7 +88,7 @@ app.patch("/user/:userId", async (req, res) => {
   const userId = req.params.userId;
   // I dont want the user to update certain fields
   try {
-    const ALLOWED_UPDATES = ["gender", "about", "skills", "password"];
+    const ALLOWED_UPDATES = ["gender", "about", "skills", "password", "photoURL"];
     const isUpdateAllowed = Object.keys(req.body).every((k) =>
       ALLOWED_UPDATES.includes(k),
     );
