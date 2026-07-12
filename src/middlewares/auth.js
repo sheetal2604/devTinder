@@ -1,24 +1,25 @@
-const auth = (req, res, next) => {
-  const token = "xyz";
-  const isAuthorized = token === "xyz";
-  console.log("Calling the authorization");
-  if (!isAuthorized) {
-    res.status(401).send("Unauthorized");
-  } else {
+const jwt = require("jsonwebtoken");
+const User = require("../models/user");
+
+const userAuth = async (req, res, next) => {
+  try {
+    const cookies = req.cookies;
+    const { token } = cookies;
+    if (!token) {
+      throw new Error("Invalid token. Please login again!!");
+    }
+    const decoded = await jwt.verify(token, "DEV@TINDER!234");
+    const { _id } = decoded;
+    const user = await User.findById(_id);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    req.user = user;
     next();
-  }
-};
-const userAuth = (req, res, next) => {
-  const token = "xyz";
-  const isAuthorized = token === "xyz";
-  console.log("Calling the user authorization");
-  if (!isAuthorized) {
-    res.status(401).send("Unauthorized");
-  } else {
-    next();
+  } catch (err) {
+    res.status(400).send("Error: " + err.message);
   }
 };
 module.exports = {
-  auth,
-  userAuth
+  userAuth,
 };

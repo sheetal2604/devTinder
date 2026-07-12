@@ -4,69 +4,13 @@ const connectDB = require("./config/database");
 const User = require("./models/user");
 const { validateSignupData } = require("./utils/validate");
 const bcrypt = require("bcrypt");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
+const { userAuth } = require("./middlewares/auth");
 
 // middleware to parse JSON request bodies
 app.use(express.json());
-
-//get user from DB by emailId
-// app.get("/user", async (req, res) => {
-//   const userEmail = req.body.emailId;
-//   try {
-//     const users = await User.find({ emailId: userEmail });
-//     if (users.length === 0) {
-//       res.status(404).send("User not found");
-//     } else {
-//       res.send(users);
-//     }
-//   } catch (err) {
-//     res.status(400).send("Error fetching user: " + err.message);
-//   }
-// });
-
-//get all users from DB /feed
-app.get("/feed", async (req, res) => {
-  try {
-    const users = await User.find({});
-    if (users.length === 0) {
-      res.status(404).send("No users found");
-    } else {
-      res.send(users);
-    }
-  } catch (err) {
-    res.status(400).send("Error fetching users: " + err.message);
-  }
-});
-
-//use of findOne() method to get a single user by emailId
-app.get("/user", async (req, res) => {
-  const userEmail = req.body.emailId;
-  try {
-    const user = await User.findOne({ emailId: userEmail });
-    if (!user) {
-      res.status(404).send("User not found");
-    } else {
-      res.send(user);
-    }
-  } catch (err) {
-    res.status(400).send("Error fetching user: " + err.message);
-  }
-});
-
-//Delete a user by using findByIdAndDelete method from DB
-
-app.delete("/user", async (req, res) => {
-  const userId = req.body.userId;
-  try {
-    const deletedUser = await User.findByIdAndDelete({ _id: userId });
-    if (!deletedUser) {
-      res.status(404).send("User not found");
-    } else {
-      res.send("User deleted successfully!!");
-    }
-  } catch (err) {
-    res.status(400).send("Error deleting user: " + err.message);
-  }
-});
+app.use(cookieParser());
 
 //POST signup route
 
@@ -112,6 +56,10 @@ app.post("/login", async (req, res) => {
     if (!isPasswordValid) {
       throw new Error("Invalid Credentials");
     } else {
+      const token = await jwt.sign({ _id: user._id }, "DEV@TINDER!234", {
+        expiresIn: "1d",
+      });
+      res.cookie("token", token, { expires: "1d" });
       res.status(200).send("Login Successfully!!");
     }
   } catch (err) {
@@ -119,33 +67,14 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// PATCH route to update a user by using findByIdAndUpdate method from DB
-app.patch("/user/:userId", async (req, res) => {
-  const userId = req.params.userId;
-  // I dont want the user to update certain fields
+// GET Profile
+
+app.get("/profile", userAuth, async (req, res) => {
   try {
-    const ALLOWED_UPDATES = [
-      "gender",
-      "about",
-      "skills",
-      "password",
-      "photoURL",
-    ];
-    const isUpdateAllowed = Object.keys(req.body).every((k) =>
-      ALLOWED_UPDATES.includes(k),
-    );
-    if (!isUpdateAllowed) {
-      throw new Error("Invalid updates!");
-    }
-    if (req.body.skills?.length > 10) {
-      throw new Error("Skills array cannot have more than 10 skills");
-    }
-    await User.findByIdAndUpdate({ _id: userId }, req.body, {
-      runValidators: true,
-    });
-    res.send("User updated successfully!!");
+    const user = req.user;
+    res.send(user);
   } catch (err) {
-    res.status(400).send("Error updating user data: " + err.message);
+    res.status(400).send("Error: " + err.message);
   }
 });
 
