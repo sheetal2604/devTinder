@@ -2,6 +2,8 @@ const express = require("express");
 const app = express();
 const connectDB = require("./config/database");
 const User = require("./models/user");
+const { validateSignupData } = require("./utils/validate");
+const bcrypt = require("bcrypt");
 
 // middleware to parse JSON request bodies
 app.use(express.json());
@@ -67,19 +69,53 @@ app.delete("/user", async (req, res) => {
 });
 
 //POST signup route
-app.post("/signup", async (req, res) => {
-  console.log(req.body);
-  // create a new instance of User model
-  const user = new User(req.body);
 
-  // save the user to the database
-  // since save() is an async operation and always returns a promise , use async await to handle this
-  //Error handling
+app.post("/signup", async (req, res) => {
+  //validate the request body
+
   try {
+    validateSignupData(req);
+    // encrypt the password by using bcrypt library
+
+    const { firstName, lastName, emailId, password } = req.body;
+    const passwordHash = await bcrypt.hash(password, 10);
+    // create a new instance of User model
+
+    const user = new User({
+      firstName,
+      lastName,
+      emailId,
+      password: passwordHash,
+    });
+
+    // save the user to the database
+    // since save() is an async operation and always returns a promise , use async await to handle this
+    //Error handling
+
     await user.save();
     res.send("User added successfully!!");
   } catch (err) {
     res.status(400).send("Error adding user: " + err.message);
+  }
+});
+
+// login route
+
+app.post("/login", async (req, res) => {
+  try {
+    const { emailId, password } = req.body;
+    const user = await User.findOne({ emailId });
+    if (!user) {
+      throw new Error("Invalid Credentials");
+    }
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new Error("Invalid Credentials");
+    } else {
+      res.status(200).send("Login Successfully!!");
+    }
+  } catch (err) {
+    res.status(400).send("Error: " + err.message);
   }
 });
 
@@ -88,7 +124,13 @@ app.patch("/user/:userId", async (req, res) => {
   const userId = req.params.userId;
   // I dont want the user to update certain fields
   try {
-    const ALLOWED_UPDATES = ["gender", "about", "skills", "password", "photoURL"];
+    const ALLOWED_UPDATES = [
+      "gender",
+      "about",
+      "skills",
+      "password",
+      "photoURL",
+    ];
     const isUpdateAllowed = Object.keys(req.body).every((k) =>
       ALLOWED_UPDATES.includes(k),
     );
